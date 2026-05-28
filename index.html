@@ -823,69 +823,74 @@ function sw(tab){
 
 
 async function exportReportImage(rec){
-
   try{
-
     const target = document.querySelector('#capture-area');
 
-    // Đo chiều cao thực của toàn bộ #capture-area (bao gồm phần bị scroll)
-    const fullHeight = target.scrollHeight;
-    const fullWidth  = target.scrollWidth;
+    // Clone toàn bộ #capture-area vào một container ẩn cố định kích thước
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = [
+      'position:fixed',
+      'top:0',
+      'left:0',
+      'width:' + target.offsetWidth + 'px',
+      'background:#f0ede9',
+      'z-index:-9999',
+      'pointer-events:none',
+      'overflow:visible',
+      'opacity:0',
+    ].join(';');
 
-    // Watermark tạm thời
+    const clone = target.cloneNode(true);
+    clone.style.cssText = 'position:static;transform:none;margin:0;padding:12px';
+
+    // Thêm watermark vào clone
     const wm = document.createElement('div');
-    const now = new Date().toLocaleString('vi-VN');
-    wm.innerHTML = '🕒 ' + now;
+    wm.innerHTML = '🕒 ' + new Date().toLocaleString('vi-VN');
     wm.style.cssText = 'text-align:right;font-size:11px;color:#666;padding:10px 6px 4px 0;font-weight:700';
-    target.appendChild(wm);
+    clone.appendChild(wm);
 
-    // Đợi render ổn định
-    await new Promise(r => setTimeout(r, 300));
+    wrapper.appendChild(clone);
+    document.body.appendChild(wrapper);
 
-    // Chụp FULL chiều cao thực của element
-    const canvas = await html2canvas(target, {
+    // Đợi render xong
+    await new Promise(r => setTimeout(r, 400));
+
+    const canvas = await html2canvas(clone, {
       scale: 2,
       useCORS: true,
       allowTaint: true,
       backgroundColor: '#f0ede9',
       scrollX: 0,
-      scrollY: -window.scrollY,          // bù offset scroll hiện tại
+      scrollY: 0,
       x: 0,
       y: 0,
-      width:  fullWidth,
-      height: fullHeight,                 // ← quan trọng: dùng scrollHeight
-      windowWidth:  Math.max(document.documentElement.scrollWidth, fullWidth),
-      windowHeight: Math.max(document.documentElement.scrollHeight, fullHeight),
+      width: clone.scrollWidth,
+      height: clone.scrollHeight,
+      windowWidth: clone.scrollWidth,
+      windowHeight: clone.scrollHeight,
     });
 
-    // Xóa watermark
-    wm.remove();
+    document.body.removeChild(wrapper);
 
-    // Xuất ảnh
     const image = canvas.toDataURL('image/png');
 
-    // auto rename theo tên + ngày
     const safeName = (rec.empName || 'Nhan-vien')
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .replace(/[^a-zA-Z0-9]/g, '-');
     const safeDate = (rec.date || '').replace(/-/g, '');
-    const fileName = `${safeName}-${safeDate}.png`;
 
-    // Thử download trực tiếp
     const link = document.createElement('a');
     link.href = image;
-    link.download = fileName;
+    link.download = `${safeName}-${safeDate}.png`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
 
-    // Fallback mobile: mở tab mới để lưu thủ công
-    setTimeout(() => {
-      window.open(image, '_blank');
-    }, 600);
+    // Fallback mobile
+    setTimeout(() => { window.open(image, '_blank'); }, 600);
 
-  } catch(err) {
+  }catch(err){
     console.error(err);
     alert('Lỗi xuất ảnh: ' + err.message);
   }
