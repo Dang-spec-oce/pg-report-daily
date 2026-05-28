@@ -525,7 +525,9 @@ function sw(tab){
 
 
 
+
 async function exportReportImage(rec){
+
   const box=document.getElementById('report-capture');
 
   const now = new Date();
@@ -570,42 +572,75 @@ async function exportReportImage(rec){
         <div style="font-size:12px;color:#444">${rec.reason}</div>
       </div>` : ''}
 
-      <div style="margin-top:18px;padding-top:12px;border-top:2px dashed #d10000;
-      font-size:13px;font-weight:900;color:#d10000;text-align:center">
+      <div style="margin-top:18px;padding-top:12px;border-top:2px dashed #cc0000;
+      font-size:13px;font-weight:900;color:#cc0000;text-align:center">
         THỜI GIAN XUẤT: ${timeStr}
       </div>
     </div>
   `;
 
   try{
+
     const canvas = await html2canvas(box,{
       scale:2,
       useCORS:true,
+      allowTaint:true,
       backgroundColor:'#ffffff'
     });
 
-    const imgData = canvas.toDataURL('image/jpeg',0.95);
+    const imageData = canvas.toDataURL('image/png');
 
-    // Mobile friendly download
-    const link=document.createElement('a');
-    link.href=imgData;
-    link.download=`Bao-cao-${rec.empId}-${rec.date}.jpg`;
+    // Cách tương thích mobile nhất:
+    // mở ảnh ở tab mới để người dùng tự lưu
+    const newTab = window.open();
 
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    if(newTab){
+      newTab.document.write(`
+        <html>
+        <head>
+          <title>Báo cáo bán hàng</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            body{
+              margin:0;
+              background:#111;
+              display:flex;
+              justify-content:center;
+              align-items:center;
+              min-height:100vh;
+              flex-direction:column;
+              color:#fff;
+              font-family:sans-serif;
+            }
+            img{
+              width:100%;
+              max-width:700px;
+            }
+            .tip{
+              padding:14px;
+              text-align:center;
+              font-size:14px;
+              line-height:1.5;
+            }
+          </style>
+        </head>
+        <body>
+          <img src="${imageData}" />
+          <div class="tip">
+            📸 Nhấn giữ ảnh để lưu về máy
+          </div>
+        </body>
+        </html>
+      `);
 
-    // iPhone/Safari fallback
-    setTimeout(()=>{
-      const win = window.open();
-      if(win){
-        win.document.write(`<title>Báo cáo</title><img src="${imgData}" style="width:100%">`);
-      }
-    },500);
+      newTab.document.close();
+    }else{
+      alert('⚠️ Trình duyệt đang chặn popup. Hãy dùng Chrome hoặc Safari.');
+    }
 
   }catch(err){
     console.error(err);
-    alert('❌ Xuất ảnh thất bại. Hãy thử lại trên Chrome/Zalo Browser.');
+    alert('❌ Xuất ảnh thất bại. Hãy thử bằng Chrome/Safari.');
   }
 }
 
