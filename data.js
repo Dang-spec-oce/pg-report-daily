@@ -388,6 +388,6 @@ const TARGETS = [
   }
 ];
 
-const SHIFTS = ["Hành Chánh", "Chiều", "Gãy"];
+const SHIFTS = ["Hành Chính", "Chiều", "Gãy"];
 
 const COMPETITORS = ["Realme", "SamSung", "Oppo", "Xiaomi"];
